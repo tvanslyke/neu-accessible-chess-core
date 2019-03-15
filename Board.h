@@ -5,6 +5,7 @@
 #include "ChessPiece.h"
 #include <bitset>
 #include <optional>
+#include <utility>
 #include <array>
 
 namespace ac {
@@ -70,6 +71,22 @@ struct Board {
 	};
 
 	Board() = default;
+	
+	constexpr std::optional<ChessPiece> operator[](std::pair<BoardCol, BoardRow> pos) const {
+		return (*this)[make_board_pos(pos.first, pos.second)];
+	}
+
+	constexpr reference operator[](std::pair<BoardCol, BoardRow> pos) {
+		return (*this)[make_board_pos(pos.first, pos.second)];
+	}
+
+	constexpr std::optional<ChessPiece> operator[](std::pair<BoardRow, BoardCol> pos) const {
+		return (*this)[make_board_pos(pos.first, pos.second)];
+	}
+
+	constexpr reference operator[](std::pair<BoardRow, BoardCol> pos) {
+		return (*this)[make_board_pos(pos.first, pos.second)];
+	}
 
 	constexpr std::optional<ChessPiece> operator[](BoardPos pos) const {
 		auto piece_index = 0u;
@@ -165,6 +182,99 @@ struct Board {
 		return positions(ChessPiece::BlackKing);
 	}
 
+	static constexpr Board decode_fen_string(std::string_view fenstr) {
+		Board board;
+		auto row_idx = 7u;
+		auto col_idx = 0u;
+		for(char c: fenstr) {
+			assert(col_idx <= 8u);
+			assert(row_idx < 8u);
+			switch(c) {
+			default: assert(!"Bad fenstring.");
+			case '1': 
+			case '2': 
+			case '3': 
+			case '4': 
+			case '5': 
+			case '6': 
+			case '7':
+			case '8': 
+				col_idx += c - '0';
+				assert(col_idx <= 8u && "Bad fenstring.");
+				break;
+			case '/':
+				assert(col_idx == 8u && "Bad fenstring.");
+				++row_idx;
+				col_idx = 0u;
+				break;
+			case 'K':
+				board[{row_from_index(row_idx), col_from_index(col_idx)}] = ChessPiece::WhiteKing;
+				break;
+			case 'Q':
+				board[{row_from_index(row_idx), col_from_index(col_idx)}] = ChessPiece::WhiteQueen;
+				break;
+			case 'R':
+				board[{row_from_index(row_idx), col_from_index(col_idx)}] = ChessPiece::WhiteRook;
+				break;
+			case 'B':
+				board[{row_from_index(row_idx), col_from_index(col_idx)}] = ChessPiece::WhiteBishop;
+				break;
+			case 'N':
+				board[{row_from_index(row_idx), col_from_index(col_idx)}] = ChessPiece::WhiteKnight;
+				break;
+			case 'P':
+				board[{row_from_index(row_idx), col_from_index(col_idx)}] = ChessPiece::WhitePawn;
+				break;
+			case 'k':
+				board[{row_from_index(row_idx), col_from_index(col_idx)}] = ChessPiece::BlackKing;
+				break;
+			case 'q':
+				board[{row_from_index(row_idx), col_from_index(col_idx)}] = ChessPiece::BlackQueen;
+				break;
+			case 'r':
+				board[{row_from_index(row_idx), col_from_index(col_idx)}] = ChessPiece::BlackRook;
+				break;
+			case 'b':
+				board[{row_from_index(row_idx), col_from_index(col_idx)}] = ChessPiece::BlackBishop;
+				break;
+			case 'n':
+				board[{row_from_index(row_idx), col_from_index(col_idx)}] = ChessPiece::BlackKnight;
+				break;
+			case 'p':
+				board[{row_from_index(row_idx), col_from_index(col_idx)}] = ChessPiece::BlackPawn;
+				break;
+			}
+		}
+		return board;
+	}
+
+	std::string fenstring() const {
+		std::string fenstr;
+		const auto& self = *this;
+		for(auto row: {8_row, 7_row, 6_row, 5_row, 4_row, 3_row, 2_row, 1_row}) {
+			std::size_t blank_count = 0u;
+			for(auto col: {1_col, 2_col, 3_col, 4_col, 5_col, 6_col, 7_col, 8_col}) {
+				auto piece = self[{row, col}];
+				if(not piece) {
+					++blank_count;
+					continue;
+				} else {
+					if(blank_count != 0u) {
+						fenstr.push_back(static_cast<char>('0' + blank_count));
+						blank_count = 0u;
+					}
+					fenstr.push_back(forsyth_edwards_encoding(*piece));
+				}
+			}
+			if(blank_count != 0u) {
+				fenstr.push_back('0' + blank_count);
+			}
+			if(row != 1_row) {
+				fenstr.push_back('/');
+			}
+		}
+		return fenstr;
+	}
 
 	constexpr bool _invariants() const {
 		auto all = BitBoard();
@@ -182,7 +292,20 @@ struct Board {
 	}
 
 private:
-	std::array<BitBoard, 12u> bit_boards_;
+	std::array<BitBoard, 12u> bit_boards_ = {
+		BitBoard{},
+		BitBoard{},
+		BitBoard{},
+		BitBoard{},
+		BitBoard{},
+		BitBoard{},
+		BitBoard{},
+		BitBoard{},
+		BitBoard{},
+		BitBoard{},
+		BitBoard{},
+		BitBoard{}
+	};
 };
 
 } /* namespace ac */

@@ -8,9 +8,11 @@
 #include <boost/filesystem/path.hpp>
 #include <utility>
 #include <fmt/format.h>
+#include "Board.h"
 #include "ChessPiece.h"
 #include "UCI.h"
 #include "tsl/ordered_map.h"
+#include "GameSnapshot.h"
 
 namespace ac {
 
@@ -31,7 +33,7 @@ struct ChessEngine {
 		std::size_t
 	>;
 
-	ChessEngine(bfs::path executable_path);
+	ChessEngine(const char* executable_path);
 	
 	const option_map_type& options() const;
 
@@ -48,6 +50,9 @@ struct ChessEngine {
 	void set_option(std::string_view name, std::string_view value);
 
 	void send_command(std::string_view s);
+
+
+	void set_position(const GameSnapshot& board);
 private:
 
 	uci::Option& option_at(std::string_view name);
@@ -57,8 +62,8 @@ private:
 	bool parse_next_uci_option();
 
 
-	bp::opstream engine_input_;
 	bp::ipstream engine_output_;
+	bp::opstream engine_input_;
 	bp::child engine_;
 	option_map_type options_;
 };

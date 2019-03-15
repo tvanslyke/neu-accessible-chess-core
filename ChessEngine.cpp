@@ -4,25 +4,23 @@
 namespace ac {
 
 
-
-ChessEngine::ChessEngine(bfs::path executable_path):
-	engine_input_(),
+ChessEngine::ChessEngine(const char* path):
 	engine_output_(),
+	engine_input_(),
 	engine_(
-		bfs::path(std::move(executable_path)),
+		path,
 		bp::std_out > engine_output_,
 		bp::std_in < engine_input_
 	),
 	options_{}
 {
 	engine_input_.exceptions(std::ios_base::badbit | std::ios_base::failbit);
-	engine_output_.exceptions(std::ios_base::badbit);
+	engine_output_.exceptions(std::ios_base::badbit | std::ios_base::failbit);
+	// engine_output_.exceptions(std::ios_base::badbit);
 	// ignore the first line of output from the engine.
 	std::string line;
-	std::getline(engine_output_, line);
-	// engine_output_.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-	std::cout << line << std::endl;
 	send_command("uci");
+	std::getline(engine_output_, line);
 	parse_uci_options();
 }
 
@@ -139,11 +137,15 @@ const uci::Option& ChessEngine::option_at(std::string_view name) const {
 }
 
 void ChessEngine::send_command(std::string_view s) {
+	assert(not s.empty());
+	while(not s.empty() and s.back() == '\n') {
+		s.remove_suffix(1);
+	}
+	assert(not s.empty());
 	engine_input_ << s << std::endl;
 }
 
 void ChessEngine::parse_uci_options() {
-	std::cout << "Parsing..." << std::endl;
 	{
 		std::string line;
 		std::getline(engine_output_, line);
@@ -167,31 +169,31 @@ void ChessEngine::parse_uci_options() {
 }
 
 bool ChessEngine::parse_next_uci_option() {
-	engine_output_.exceptions(std::ios_base::failbit | std::ios_base::badbit);
-	try {
-		std::string line_str;
-		std::getline(engine_output_, line_str);
-		std::string_view line(line_str);
-		if(line.substr(0, 5) == "uciok") {
-			return false;
-		}
-		auto first = line.begin();
-		auto last = line.end();
-		std::string name;
-		if(not uci::x3::phrase_parse(first, last, uci::option_header_parser, uci::x3::space, name)) {
-			throw std::runtime_error(fmt::format("Bad UCI option string: '{}'", line));
-		}
-		uci::Option option;
-		if(not uci::x3::phrase_parse(first, last, uci::uci_option_parser, uci::x3::space, option)) {
-			throw std::runtime_error(fmt::format("Bad UCI option string: '{}'", line));
-		}
-		options_.emplace(std::move(name), std::move(option));
-	} catch(...) {
-		engine_output_.exceptions(std::ios_base::badbit);
-		throw;
+	std::string line_str;
+	std::getline(engine_output_, line_str);
+	std::string_view line(line_str);
+	if(line.substr(0, 5) == "uciok") {
+		return false;
 	}
-	engine_output_.exceptions(std::ios_base::badbit);
+	auto first = line.begin();
+	auto last = line.end();
+	std::string name;
+	if(not uci::x3::phrase_parse(first, last, uci::option_header_parser, uci::x3::space, name)) {
+		throw std::runtime_error(fmt::format("Bad UCI option string: '{}'", line));
+	}
+	uci::Option option;
+	if(not uci::x3::phrase_parse(first, last, uci::uci_option_parser, uci::x3::space, option)) {
+		throw std::runtime_error(fmt::format("Bad UCI option string: '{}'", line));
+	}
+	options_.emplace(std::move(name), std::move(option));
 	return true;
 }
+
+
+void ChessEngine::set_position(const GameSnapshot& board) {
+	send_command(fmt::format("position {}", board.fenstring()));
+}
+
+
 
 } /* namespace ac */

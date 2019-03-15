@@ -4,6 +4,7 @@
 #include "ChessPiece.h"
 #include <array>
 #include <cstdint>
+#include <bitset>
 
 namespace ac {
 
@@ -122,7 +123,7 @@ private:
 		
 	}
 
-	int_type board_;
+	int_type board_ = 0u;
 };
 
 } /* namespace ac */

@@ -15,7 +15,7 @@ enum class ChessPieceKind: unsigned char {
 	King
 };
 
-enum class ChessPieceColor: unsigned char {
+enum class ChessPieceColor: bool {
 	White, Black
 };
 
@@ -34,6 +34,50 @@ enum class ChessPiece: unsigned char {
 	BlackKing
 };
 
+enum class CastleStatus: unsigned char {
+	/* Flags */
+	None           = 0b0000u,
+	WhiteKingside  = 0b0001u,
+	WhiteQueenside = 0b0010u,
+	BlackKingside  = 0b0100u,
+	BlackQueenside = 0b1000u
+};
+
+constexpr CastleStatus operator|(CastleStatus l, CastleStatus r) {
+	return static_cast<CastleStatus>(
+		static_cast<unsigned char>(l) | static_cast<unsigned char>(r)
+	);
+}
+
+constexpr CastleStatus operator&(CastleStatus l, CastleStatus r) {
+	return static_cast<CastleStatus>(
+		static_cast<unsigned char>(l) & static_cast<unsigned char>(r)
+	);
+}
+
+constexpr CastleStatus operator^(CastleStatus l, CastleStatus r) {
+	return static_cast<CastleStatus>(
+		static_cast<unsigned char>(l) ^ static_cast<unsigned char>(r)
+	);
+}
+
+constexpr CastleStatus operator~(CastleStatus s) {
+	return static_cast<CastleStatus>(~static_cast<unsigned char>(s));
+}
+
+constexpr CastleStatus& operator|=(CastleStatus& l, CastleStatus r) {
+	return l = l | r;
+}
+
+constexpr CastleStatus& operator&=(CastleStatus& l, CastleStatus r) {
+	return l = l & r;
+}
+
+constexpr CastleStatus& operator^=(CastleStatus& l, CastleStatus r) {
+	return l = l ^ r;
+}
+
+
 constexpr std::size_t index(ChessPiece p) {
 	return static_cast<std::size_t>(p);
 }
@@ -41,7 +85,6 @@ constexpr std::size_t index(ChessPiece p) {
 constexpr ChessPiece chess_piece_from_index(std::size_t index) {
 	return static_cast<ChessPiece>(index);
 }
-
 
 constexpr std::size_t material_value(ChessPieceKind kind) {
 	switch(kind) {
@@ -82,7 +125,7 @@ constexpr std::size_t index(BoardCol col) {
 	return static_cast<std::size_t>(col);
 }
 
-constexpr BoardCol column_from_index(std::size_t index) {
+constexpr BoardCol col_from_index(std::size_t index) {
 	return static_cast<BoardCol>(index);
 }
 
@@ -114,6 +157,52 @@ constexpr const char* name(ChessPieceKind kind) {
 	case ChessPieceKind::Pawn:   return "";
 	}
 }
+
+constexpr char forsyth_edwards_encoding(ChessPiece piece) {
+	switch(piece) {
+	case ChessPiece::WhitePawn:   return 'P';
+        case ChessPiece::WhiteKnight: return 'N';
+        case ChessPiece::WhiteBishop: return 'B';
+        case ChessPiece::WhiteRook:   return 'R';
+        case ChessPiece::WhiteQueen:  return 'Q';
+        case ChessPiece::WhiteKing:   return 'K';
+        case ChessPiece::BlackPawn:   return 'p';
+        case ChessPiece::BlackKnight: return 'n';
+        case ChessPiece::BlackBishop: return 'b';
+        case ChessPiece::BlackRook:   return 'r';
+        case ChessPiece::BlackQueen:  return 'q';
+        case ChessPiece::BlackKing:   return 'k';
+	}
+}
+
+constexpr const char* forsyth_edwards_encoding(CastleStatus status) {
+	constexpr auto WK = CastleStatus::WhiteKingside;
+	constexpr auto WQ = CastleStatus::WhiteQueenside;
+	constexpr auto BK = CastleStatus::BlackKingside;
+	constexpr auto BQ = CastleStatus::BlackQueenside;
+	constexpr auto N  = CastleStatus::None;
+	switch(status) {
+	default: assert(!"Bad castle status.");
+	case (WK | WQ | BK | BQ): return "KQkq";
+	case (WK | WQ | BK |  N): return "KQk";
+	case (WK | WQ |  N | BQ): return "KQq";
+	case (WK | WQ |  N |  N): return "KQ";
+	case (WK |  N | BK | BQ): return "Kkq";
+	case (WK |  N | BK |  N): return "Kk";
+	case (WK |  N |  N | BQ): return "Kq";
+	case (WK |  N |  N |  N): return "K";
+	case ( N | WQ | BK | BQ): return "Qkq";
+	case ( N | WQ | BK |  N): return "Qk";
+	case ( N | WQ |  N | BQ): return "Qq";
+	case ( N | WQ |  N |  N): return "Q";
+	case ( N |  N | BK | BQ): return "kq";
+	case ( N |  N | BK |  N): return "k";
+	case ( N |  N |  N | BQ): return "q";
+	case ( N |  N |  N |  N): return "-";
+	}
+}
+
+
 
 constexpr char name_chr(BoardCol col) {
 	return name(col)[0u];
@@ -279,14 +368,14 @@ inline constexpr const char board_pos_name[] = {
 namespace detail {
 
 static constexpr char board_position_names[64u][3u] = {
-	"A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8",
-	"B1", "B2", "B3", "B4", "B5", "B6", "B7", "B8",
-	"C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8",
-	"D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8",
-	"E1", "E2", "E3", "E4", "E5", "E6", "E7", "E8",
-	"F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8",
-	"G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8",
-	"H1", "H2", "H3", "H4", "H5", "H6", "H7", "H8"
+	"a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8",
+	"b1", "b2", "b3", "b4", "b5", "b6", "b7", "b8",
+	"c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8",
+	"d1", "d2", "d3", "d4", "d5", "d6", "d7", "d8",
+	"e1", "e2", "e3", "e4", "e5", "e6", "e7", "e8",
+	"f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8",
+	"g1", "g2", "g3", "g4", "g5", "g6", "g7", "g8",
+	"h1", "h2", "h3", "h4", "h5", "h6", "h7", "h8"
 };
 
 } /* namespace detail */
