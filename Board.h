@@ -2,6 +2,7 @@
 #define AC_BOARD_H
 
 #include "BitBoard.h"
+#include "ChessPiece.h"
 #include <bitset>
 #include <optional>
 #include <array>
@@ -12,11 +13,11 @@ struct Board {
 
 	struct reference {
 
-		constexpr reference& operator=(reference&& other) const {
+		constexpr const reference& operator=(reference&& other) const {
 			return *this = std::as_const(other);
 		}
 
-		constexpr reference& operator=(const reference& other) const {
+		constexpr const reference& operator=(const reference& other) const {
 			return *this = static_cast<std::optional<ChessPiece>>(other);
 		}
 		
@@ -25,7 +26,7 @@ struct Board {
 		}
 
 		constexpr operator bool() const {
-			return std::as_const(board_)[pos_];
+			return static_cast<bool>(std::as_const(board_)[pos_]);
 		}
 
 		constexpr ChessPiece operator*() const {
@@ -42,21 +43,21 @@ struct Board {
 			return static_cast<std::optional<ChessPiece>>(*this) != piece;
 		}
 
-		constexpr reference& operator=(std::optional<ChessPiece> piece) const {
-			auto brd = std::find_if(
-				board_.bit_boards_.begin(),
-				board_.bit_boards_.end(),
-				[](const auto brd) { return brd[pos_]; }
-			);
-			if(brd != board_.bit_boards_.end()) {
-				(*brd)[pos_] = false;
+		constexpr const reference& operator=(std::optional<ChessPiece> piece) const {
+			for(auto& brd: board_.bit_boards_) {
+				if(brd[pos_]) {
+					brd[pos_] = false;
+					break;
+				}
 			}
 			if(piece) {
-				board_.bit_boards_[index(*piece)] = true;
+				board_.bit_boards_[index(*piece)][pos_] = true;
 			}
+			return *this;
 		}
 
 	private:
+		friend class Board;
 		constexpr reference(Board& brd, BoardPos pos):
 			board_(brd),
 			pos_(pos)
@@ -70,15 +71,18 @@ struct Board {
 
 	Board() = default;
 
-	constexpr std::optional<ChessPiece> operator[](BoardPosition pos) const {
-		auto pos = std::find_if(bit_boards_.begin(), bit_boards_.end(), [](auto b){ return b.any(); });
-		if(pos != bit_boards_.end()) { 
-			return static_cast<ChessPiece>(pos - bit_boards_.begin());
+	constexpr std::optional<ChessPiece> operator[](BoardPos pos) const {
+		auto piece_index = 0u;
+		for(auto brd: bit_boards_) {
+			if(brd[pos]) {
+				return chess_piece_from_index(piece_index);
+			}
+			++piece_index;
 		}
 		return std::nullopt;
 	}
 
-	constexpr reference operator[](BoardPosition pos) const {
+	constexpr reference operator[](BoardPos pos) {
 		return reference(*this, pos);
 	}
 
@@ -180,8 +184,6 @@ struct Board {
 private:
 	std::array<BitBoard, 12u> bit_boards_;
 };
-
-static_assert(sizeof(BitBoard) <= 8u);
 
 } /* namespace ac */
 

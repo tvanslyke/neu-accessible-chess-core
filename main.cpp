@@ -1,44 +1,17 @@
 #include "ChessEngine.h"
+#include "Board.h"
 #include <iostream>
-#include <thread>
-#include <mutex>
 
-static_assert(__cplusplus >= 201703L);
+static_assert(__cplusplus >= 201703L, "Compiler must support C++17.");
 
-std::mutex cout_mutex;
+// Stockfish executable.
+inline constexpr const char* stockfish_path = "/home/tim/neu/software-engineering/project/Stockfish/src/stockfish";
 
 int main() {
-	std::cout << "Creating engine" << std::endl;
-	auto engine = ac::ChessEngine("/home/tim/neu/software-engineering/project/Stockfish/src/stockfish");
-	std::cout << "Done" << std::endl;
-	// std::cout << "Spawning output thread" << std::endl;
-	// std::thread output_thread([&]() {
-	// 	std::cout << "Output thread spawned" << std::endl;
-	// 	for(;;) {
-	// 		auto out = engine.read();
-	// 		if(not out.empty()) {
-	// 			auto g = std::lock_guard(cout_mutex);
-	// 			std::cout.write(out.data(), out.size());
-	// 			std::cout << std::flush;
-	// 		}
-	// 	}
-	// });
-	// output_thread.detach();
+	auto engine = ac::ChessEngine(stockfish_path);
 	
+	// print all of the options provided by stockfish.
 	for(const auto& [name, option]: engine.options()) {
 		std::cout << '\t' << name << ": " << option.repr() << std::endl;
-	}
-	{
-		auto g = std::lock_guard(cout_mutex);
-		std::cout << "Reading from stdin." << std::endl;
-	}
-	for(;;) {
-		std::string line;
-		std::getline(std::cin, line);
-		{
-			auto g = std::lock_guard(cout_mutex);
-			std::cout << "Got line: '" << line  << "'" << std::endl;
-		}
-		engine.write(line.c_str());
 	}
 }

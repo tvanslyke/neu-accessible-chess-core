@@ -10,7 +10,7 @@ namespace ac {
 struct BitBoard {
 
 private:
-	using int_type = std::uint_least64_t
+	using int_type = std::uint_least64_t;
 public:
 
 	struct bit_reference {
@@ -24,6 +24,7 @@ public:
 			} else {
 				board_ &= ~(int_type(1u) << index(pos_));
 			}
+			return *this;
 		}
 
 		constexpr bool operator~() const {
@@ -42,16 +43,13 @@ public:
 		BoardPos pos_;
 	};
 
-	using reference       = std::bitset<64u>::reference;
-	using const_reference = std::bitset<64u>::const_reference;
-
-	constexpr BitBoard() = default;
+	BitBoard() = default;
 
 	constexpr bool operator[](BoardPos pos) const {
 		return (0x01u & (board_ >> index(pos))) != 0u;
 	}
 
-	constexpr reference operator[](BoardPos pos) const {
+	constexpr bit_reference operator[](BoardPos pos) {
 		return {board_, pos};
 	}
 
@@ -73,8 +71,9 @@ public:
 
 	constexpr std::size_t count() const {
 #ifdef __GNUC__ 
+		// Generates better assembly.
 		return __builtin_popcountll(board_);
-#else 
+#else
 		std::size_t count = 0u;
 		auto brd = board_;
 		while(brd != 0u) {
@@ -98,10 +97,6 @@ public:
 	friend constexpr BitBoard operator^=(BitBoard& l, BitBoard r) {
 		l.board_ ^= r.board_;
 		return l;
-	}
-
-	friend constexpr BitBoard operator^(BitBoard l, BitBoard r) {
-		return {l.board_ ^ r.board_};
 	}
 
 	friend constexpr BitBoard operator|(BitBoard l, BitBoard r) {
@@ -129,8 +124,6 @@ private:
 
 	int_type board_;
 };
-
-static_assert(sizeof(BitBoard) <= 8u);
 
 } /* namespace ac */
 

@@ -34,6 +34,15 @@ enum class ChessPiece: unsigned char {
 	BlackKing
 };
 
+constexpr std::size_t index(ChessPiece p) {
+	return static_cast<std::size_t>(p);
+}
+
+constexpr ChessPiece chess_piece_from_index(std::size_t index) {
+	return static_cast<ChessPiece>(index);
+}
+
+
 constexpr std::size_t material_value(ChessPieceKind kind) {
 	switch(kind) {
 	default: assert(!"Bad piece kind ('King' is not a valid input to this function).");
@@ -215,7 +224,6 @@ inline constexpr BoardRow structured_binding_rows[] = {
 	5_row, 6_row, 7_row, 8_row
 };
 
-
 } /* namespace detail */
 
 // For structured bindings.
@@ -290,7 +298,6 @@ constexpr const char* name(BoardPos pos) {
 constexpr std::size_t index(BoardPos pos) {
 	return static_cast<std::size_t>(pos);
 }
-
 
 constexpr BoardPos make_board_pos(BoardCol c, BoardRow r) {
 	return static_cast<BoardPos>(
