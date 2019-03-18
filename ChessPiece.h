@@ -3,6 +3,7 @@
 
 #include <cstddef>
 #include <cassert>
+#include <optional>
 
 namespace ac {
 
@@ -266,14 +267,14 @@ constexpr BoardCol operator ""_col() {
 	static_assert(sizeof...(C) == 1u, "Too many characters in BoardCol literal.");
 	constexpr char chrs[] = {C...};
 	switch(chrs[0]) {
-	case 1u: return BoardCol::A;
-	case 2u: return BoardCol::B;
-	case 3u: return BoardCol::C;
-	case 4u: return BoardCol::D;
-	case 5u: return BoardCol::E;
-	case 6u: return BoardCol::F;
-	case 7u: return BoardCol::G;
-	case 8u: return BoardCol::H;
+	case '1': return BoardCol::A;
+	case '2': return BoardCol::B;
+	case '3': return BoardCol::C;
+	case '4': return BoardCol::D;
+	case '5': return BoardCol::E;
+	case '6': return BoardCol::F;
+	case '7': return BoardCol::G;
+	case '8': return BoardCol::H;
 	default: assert(!"Bad column number for BoardCol literal.");
 	}
 }
@@ -360,6 +361,7 @@ constexpr BoardCol col(BoardPos pos) {
 	return c;
 }
 
+
 template <BoardPos Pos>
 inline constexpr const char board_pos_name[] = {
 	name_chr(col(Pos)), name_chr(row(Pos)), '\0'
@@ -407,6 +409,119 @@ constexpr BoardPos board_pos_from_string(std::string_view sv) {
 	assert(sv.size() == 2);
 	return operator""_pos(sv.data(), 2u);
 }
+
+constexpr BoardPos board_pos_from_index(std::size_t index) {
+	assert(index < 64u);
+	return static_cast<BoardPos>(index);
+}
+
+constexpr BoardCol col_before(BoardCol c) {
+	assert(c != 1_col);
+	return col_from_index(index(c) - 1u);
+}
+
+constexpr BoardCol col_after(BoardCol c) {
+	assert(c != 8_col);
+	return col_from_index(index(c) + 1u);
+}
+
+constexpr BoardRow row_before(BoardRow r) {
+	assert(r != 1_row);
+	return row_from_index(index(r) - 1u);
+}
+
+constexpr BoardRow row_after(BoardRow r) {
+	assert(r != 8_row);
+	return row_from_index(index(r) + 1u);
+}
+
+constexpr BoardPos col_before(BoardPos pos) {
+	auto [c, r] = pos;
+	return make_board_pos(r, col_before(c));
+}
+
+constexpr BoardPos col_after(BoardPos pos) {
+	auto [c, r] = pos;
+	return make_board_pos(r, col_after(c));
+}
+
+constexpr BoardPos row_before(BoardPos pos) {
+	auto [c, r] = pos;
+	return make_board_pos(row_before(r), c);
+}
+
+constexpr BoardPos row_after(BoardPos pos) {
+	auto [c, r] = pos;
+	return make_board_pos(row_after(r), c);
+}
+
+constexpr bool has_col_before(BoardPos pos) {
+	return col(pos) != 1_col;
+}
+
+constexpr bool has_col_after(BoardPos pos) {
+	return col(pos) != 8_col;
+}
+
+constexpr bool has_row_before(BoardPos pos) {
+	return row(pos) != 1_row;
+}
+
+constexpr bool has_row_after(BoardPos pos) {
+	return row(pos) != 8_row;
+}
+
+constexpr std::optional<BoardRow> operator+(BoardRow r, std::ptrdiff_t ofs) {
+	auto idx = index(r);
+	if(ofs < 0) {
+		idx -= std::size_t(-ofs);
+	} else {
+		idx += std::size_t(ofs);
+	}
+	if(idx > 8u) {
+		return std::nullopt;
+	}
+	return row_from_index(idx);
+}
+
+constexpr std::optional<BoardRow> operator+(std::ptrdiff_t ofs, BoardRow r) {
+	return r + ofs;
+}
+
+constexpr std::optional<BoardRow> operator-(BoardRow r, std::ptrdiff_t ofs) {
+	return r + -ofs;
+}
+
+constexpr std::optional<BoardCol> operator+(BoardCol c, std::ptrdiff_t ofs) {
+	auto idx = index(c);
+	if(ofs < 0) {
+		idx -= std::size_t(-ofs);
+	} else {
+		idx += std::size_t(ofs);
+	}
+	if(idx > 8u) {
+		return std::nullopt;
+	}
+	return col_from_index(idx);
+}
+
+constexpr std::optional<BoardCol> operator+(std::ptrdiff_t ofs, BoardCol c) {
+	return c + ofs;
+}
+
+constexpr std::optional<BoardCol> operator-(BoardCol c, std::ptrdiff_t ofs) {
+	return c + -ofs;
+}
+
+constexpr std::array<BoardRow, 8u> each_row = {
+	1_row, 2_row, 3_row, 4_row,
+	5_row, 6_row, 7_row, 8_row,
+};
+
+constexpr std::array<BoardCol, 8u> each_col = {
+	1_col, 2_col, 3_col, 4_col,
+	5_col, 6_col, 7_col, 8_col,
+};
 
 } /* namespace ac */
 

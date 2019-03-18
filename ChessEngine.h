@@ -51,8 +51,9 @@ struct ChessEngine {
 
 	void send_command(std::string_view s);
 
-
 	void set_position(const GameSnapshot& board);
+
+	// void go();
 private:
 
 	uci::Option& option_at(std::string_view name);

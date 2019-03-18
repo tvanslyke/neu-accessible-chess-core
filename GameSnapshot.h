@@ -24,27 +24,14 @@ struct GameSnapshot {
 
 	std::string fenstring() const {
 		auto fenstr = board.fenstring();
-		fenstr.append(active_color == ChessPieceColor::Black ? " b" : " w");
-		fenstr.push_back(' ');
-		fenstr.append(forsyth_edwards_encoding(castle_status));
-		fenstr.push_back(' ');
-		if(en_passant_possible) {
-			fenstr.append(name(en_passant_target));
-		} else {
-			fenstr.push_back(' ');
-		}
-		auto tens_dig = halfmove_clock / 10u;
-		auto ones_dig = halfmove_clock - tens_dig * 10u;
-		if(tens_dig != 0u) {
-			fenstr.push_back(static_cast<char>('0' + tens_dig));
-		}
-		fenstr.push_back(static_cast<char>('0' + ones_dig));
-		fenstr.push_back(' ');
-		char buff[std::numeric_limits<std::size_t>::digits10 + 2u];
-		int err = std::snprintf(buff, sizeof(buff), "%zu", fullmove_number);
-		assert(err >= 0u);
-		fenstr.append(buff);
-		return fenstr;
+		return fmt::format(
+			"{} {} {} {} {} {}",
+			active_color == ChessPieceColor::Black ? 'b' : 'w',
+			forsyth_edwards_encoding(castle_status),
+			en_passant_possible ? name(en_passant_target) : "-",
+			halfmove_clock,
+			fullmove_number
+		);
 	}
 };
 
