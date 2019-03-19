@@ -78,6 +78,19 @@ private:
 	unsigned char castle_ : 3u;
 };
 
+struct MoveDescription {
+
+	constexpr ChessPiece moved_piece() const {
+		
+	}
+
+	constexpr std::optional<ChessPiece> captured_piece() const {
+		
+	}
+
+
+};
+
 } /* namespace ac */
 
 #endif /* AC_MOVE_H */

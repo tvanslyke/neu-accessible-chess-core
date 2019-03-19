@@ -25,9 +25,7 @@ struct GameHistory {
 	ChessPieceColor current_turn() const {
 		
 	}
-
 	
-
 private:
 	GameSnapshot game_;
 	std::vector<SimpleMove> moves_;

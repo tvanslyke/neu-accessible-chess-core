@@ -7,8 +7,7 @@
 
 namespace ac {
 
-struct GameSnapshot {
-	CompressedBoard board;
+struct TemporalGameState {
 	// Color of player whose turn it is.
 	ChessPieceColor active_color : 1u;
 	// Who can castle.
@@ -17,22 +16,28 @@ struct GameSnapshot {
 	bool en_passant_possible     : 1u;
 	// The current en passant target, if any.
 	BoardPos en_passant_target   : 6u; /* Ignore gcc's warning about this bit field being too small */
-	// Number of moves since the last piece capture (for the 50 move draw rule).
+	// Number of half-moves since the last piece capture or pawn advance (for the 50 move draw rule).
 	std::size_t halfmove_clock   : 6u;
 	// Total number of fullmoves.
-	std::size_t fullmove_number;
+	std::size_t fullmove_number  : 14u;
 };
 
+static_assert(sizeof(TemporalGameState) <= 8u);
+
+struct GameSnapshot {
+	CompressedBoard board;
+	TemporalGameState temporal_state;
+};
 
 inline std::string forsyth_edwards_encoding(const GameSnapshot& snapshot) {
 	return fmt::format(
 		"{} {} {} {} {} {}",
 		forsyth_edwards_encoding(snapshot.board),
-		snapshot.active_color == ChessPieceColor::Black ? 'b' : 'w',
-		forsyth_edwards_encoding(snapshot.castle_status),
-		snapshot.en_passant_possible ? name(snapshot.en_passant_target) : "-",
-		snapshot.halfmove_clock,
-		snapshot.fullmove_number
+		snapshot.temporal_state.active_color == ChessPieceColor::Black ? 'b' : 'w',
+		forsyth_edwards_encoding(snapshot.temporal_state.castle_status),
+		snapshot.temporal_state.en_passant_possible ? name(snapshot.temporal_state.en_passant_target) : "-",
+		snapshot.temporal_state.halfmove_clock,
+		snapshot.temporal_state.fullmove_number
 	);
 }
 
