@@ -21,7 +21,7 @@ enum class ChessPieceColor: bool {
 };
 
 enum class ChessPiece: unsigned char {
-	WhitePawn,
+	WhitePawn=1,
 	WhiteKnight,
 	WhiteBishop,
 	WhiteRook,
@@ -33,6 +33,22 @@ enum class ChessPiece: unsigned char {
 	BlackRook,
 	BlackQueen,
 	BlackKing
+};
+
+enum class OptionalChessPiece: unsigned char {
+	None        = 0,
+	WhitePawn   = static_cast<unsigned char>(ChessPiece::WhitePawn),
+	WhiteKnight = static_cast<unsigned char>(ChessPiece::WhiteKnight),
+	WhiteBishop = static_cast<unsigned char>(ChessPiece::WhiteBishop),
+	WhiteRook   = static_cast<unsigned char>(ChessPiece::WhiteRook),
+	WhiteQueen  = static_cast<unsigned char>(ChessPiece::WhiteQueen),
+	WhiteKing   = static_cast<unsigned char>(ChessPiece::WhiteKing),
+	BlackPawn   = static_cast<unsigned char>(ChessPiece::BlackPawn),
+	BlackKnight = static_cast<unsigned char>(ChessPiece::BlackKnight),
+	BlackBishop = static_cast<unsigned char>(ChessPiece::BlackBishop),
+	BlackRook   = static_cast<unsigned char>(ChessPiece::BlackRook),
+	BlackQueen  = static_cast<unsigned char>(ChessPiece::BlackQueen),
+	BlackKing   = static_cast<unsigned char>(ChessPiece::BlackKing)
 };
 
 enum class CastleStatus: unsigned char {
@@ -513,12 +529,34 @@ constexpr std::optional<BoardCol> operator-(BoardCol c, std::ptrdiff_t ofs) {
 	return c + -ofs;
 }
 
-constexpr std::array<BoardRow, 8u> each_row = {
+constexpr BoardPos operator+(BoardRow r, BoardCol c) {
+	return make_board_pos(r, c);
+}
+
+constexpr BoardPos operator+(BoardCol r, BoardRow c) {
+	return make_board_pos(r, c);
+}
+
+constexpr std::optional<BoardPos> operator+(std::optional<BoardRow> r, std::optional<BoardCol> c) {
+	if(r and c) {
+		return *r + *c;
+	}
+	return std::nullopt;
+}
+
+constexpr std::optional<BoardPos> operator+(std::optional<BoardCol> c, std::optional<BoardRow> r) {
+	if(r and c) {
+		return *r + *c;
+	}
+	return std::nullopt;
+}
+
+inline constexpr std::array<BoardRow, 8u> each_row = {
 	1_row, 2_row, 3_row, 4_row,
 	5_row, 6_row, 7_row, 8_row,
 };
 
-constexpr std::array<BoardCol, 8u> each_col = {
+inline constexpr std::array<BoardCol, 8u> each_col = {
 	1_col, 2_col, 3_col, 4_col,
 	5_col, 6_col, 7_col, 8_col,
 };

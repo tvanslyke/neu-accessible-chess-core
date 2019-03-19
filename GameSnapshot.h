@@ -8,7 +8,7 @@
 namespace ac {
 
 struct GameSnapshot {
-	Board board;
+	CompressedBoard board;
 	// Color of player whose turn it is.
 	ChessPieceColor active_color : 1u;
 	// Who can castle.
@@ -21,19 +21,20 @@ struct GameSnapshot {
 	std::size_t halfmove_clock   : 6u;
 	// Total number of fullmoves.
 	std::size_t fullmove_number;
-
-	std::string fenstring() const {
-		auto fenstr = board.fenstring();
-		return fmt::format(
-			"{} {} {} {} {} {}",
-			active_color == ChessPieceColor::Black ? 'b' : 'w',
-			forsyth_edwards_encoding(castle_status),
-			en_passant_possible ? name(en_passant_target) : "-",
-			halfmove_clock,
-			fullmove_number
-		);
-	}
 };
+
+
+std::string forsyth_edwards_encoding(const GameSnapshot& snapshot) const {
+	return fmt::format(
+		"{} {} {} {} {} {}",
+		forsyth_edwards_encoding(snapshot.board),
+		snapshot.active_color == ChessPieceColor::Black ? 'b' : 'w',
+		forsyth_edwards_encoding(snapshot.castle_status),
+		snapshot.en_passant_possible ? name(snapshot.en_passant_target) : "-",
+		snapshot.halfmove_clock,
+		snapshot.fullmove_number
+	);
+}
 
 } /* namespace ac */
 
