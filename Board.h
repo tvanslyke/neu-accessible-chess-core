@@ -626,7 +626,7 @@ template <
 		bool
 	> = false
 >
-std::string forsyth_edwards_encoding(const Brd& board) const {
+std::string forsyth_edwards_encoding(const Brd& board) {
 	std::string fenstr;
 	for(auto row: {8_row, 7_row, 6_row, 5_row, 4_row, 3_row, 2_row, 1_row}) {
 		std::size_t blank_count = 0u;

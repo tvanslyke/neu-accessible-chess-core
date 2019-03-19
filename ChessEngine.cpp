@@ -190,8 +190,8 @@ bool ChessEngine::parse_next_uci_option() {
 }
 
 
-void ChessEngine::set_position(const GameSnapshot& board) {
-	send_command(fmt::format("position {}", board.fenstring()));
+void ChessEngine::set_position(const GameSnapshot& snapshot) {
+	send_command(fmt::format("position {}", forsyth_edwards_encoding(snapshot)));
 }
 
 

@@ -24,7 +24,7 @@ struct GameSnapshot {
 };
 
 
-std::string forsyth_edwards_encoding(const GameSnapshot& snapshot) const {
+inline std::string forsyth_edwards_encoding(const GameSnapshot& snapshot) {
 	return fmt::format(
 		"{} {} {} {} {} {}",
 		forsyth_edwards_encoding(snapshot.board),
