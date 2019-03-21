@@ -3,7 +3,7 @@
 
 #include <cstddef>
 #include <cassert>
-#include <optional>
+#include "optional_extra.h"
 
 namespace ac {
 
@@ -20,8 +20,17 @@ enum class ChessPieceColor: bool {
 	White, Black
 };
 
+enum class EnPassantDirection: bool {
+	Left, Right
+};
+
+enum class PawnCaptureDirection: bool {
+	Left, Right
+};
+
+
 enum class ChessPiece: unsigned char {
-	WhitePawn=1,
+	WhitePawn,
 	WhiteKnight,
 	WhiteBishop,
 	WhiteRook,
@@ -35,8 +44,27 @@ enum class ChessPiece: unsigned char {
 	BlackKing
 };
 
+constexpr ChessPiece operator+(ChessPieceKind k, ChessPieceColor c) {
+	return static_cast<unsigned>(c) * 6u + static_cast<unsigned>(k);
+}
+
+constexpr ChessPiece operator+(ChessPieceColor c, ChessPieceKind k) {
+	return k + c;
+}
+
+constexpr std::optional<ChessPiece> operator+(std::optional<ChessPieceKind> k, std::optional<ChessPieceColor> c) {
+	if(k and c) {
+		return *k + *c;
+	} else {
+		return std::nullopt;
+	}
+}
+
+constexpr std::optional<ChessPiece> operator+(std::optional<ChessPieceColor> c, std::optional<ChessPieceKind> k) {
+	return k + c;
+}
+
 enum class OptionalChessPiece: unsigned char {
-	None        = 0,
 	WhitePawn   = static_cast<unsigned char>(ChessPiece::WhitePawn),
 	WhiteKnight = static_cast<unsigned char>(ChessPiece::WhiteKnight),
 	WhiteBishop = static_cast<unsigned char>(ChessPiece::WhiteBishop),
@@ -48,7 +76,8 @@ enum class OptionalChessPiece: unsigned char {
 	BlackBishop = static_cast<unsigned char>(ChessPiece::BlackBishop),
 	BlackRook   = static_cast<unsigned char>(ChessPiece::BlackRook),
 	BlackQueen  = static_cast<unsigned char>(ChessPiece::BlackQueen),
-	BlackKing   = static_cast<unsigned char>(ChessPiece::BlackKing)
+	BlackKing   = static_cast<unsigned char>(ChessPiece::BlackKing),
+	None        = 12
 };
 
 enum class CastleStatus: unsigned char {
@@ -99,8 +128,16 @@ constexpr std::size_t index(ChessPiece p) {
 	return static_cast<std::size_t>(p);
 }
 
+constexpr std::optional<std::size_t> index(std::optional<ChessPiece> p) {
+	return p ? some(index(*p)) : std::nullopt;
+}
+
 constexpr ChessPiece chess_piece_from_index(std::size_t index) {
 	return static_cast<ChessPiece>(index);
+}
+
+constexpr std::optional<ChessPiece> chess_piece_from_index(std::optional<std::size_t> index) {
+	return index ? some(chess_piece_from_index(*index)) : std::nullopt;
 }
 
 constexpr std::size_t material_value(ChessPieceKind kind) {
@@ -122,8 +159,17 @@ constexpr ChessPieceColor color(ChessPiece piece) {
 	}
 }
 
+constexpr std::optional<ChessPieceColor> color(std::optional<ChessPiece> piece) {
+	return piece ? some(color(*piece)) : std::nullopt;
+}
+
+
 constexpr ChessPieceKind kind(ChessPiece piece) {
 	return static_cast<ChessPieceKind>(static_cast<unsigned>(piece) % 6u);
+}
+
+constexpr std::optional<ChessPieceKind> kind(std::optional<ChessPiece> piece) {
+	return piece ? std::optional{kind(*piece)} : std::nullopt;
 }
 
 enum class BoardRow: unsigned char {
@@ -138,16 +184,32 @@ constexpr std::size_t index(BoardRow row) {
 	return static_cast<std::size_t>(row);
 }
 
+constexpr std::optional<std::size_t> index(std::optional<BoardRow> row) {
+	return piece ? some(index(*row)) : std::nullopt;
+}
+
 constexpr std::size_t index(BoardCol col) {
 	return static_cast<std::size_t>(col);
+}
+
+constexpr std::optional<std::size_t> index(std::optional<BoardCol> col) {
+	return piece ? some(index(*col)) : std::nullopt;
 }
 
 constexpr BoardCol col_from_index(std::size_t index) {
 	return static_cast<BoardCol>(index);
 }
 
+constexpr std::optional<BoardCol> col_from_index(std::optional<std::size_t> index) {
+	return piece ? some(index(*col)) : std::nullopt;
+}
+
 constexpr BoardRow row_from_index(std::size_t index) {
 	return static_cast<BoardRow>(index);
+}
+
+constexpr std::optional<BoardRow> row_from_index(std::optional<std::size_t> index) {
+	return index ? some(row_from_index(*index)) : std::nullopt;
 }
 		
 constexpr const char* name(BoardCol col) {
@@ -225,6 +287,10 @@ constexpr char name_chr(BoardCol col) {
 	return name(col)[0u];
 }
 
+constexpr std::optional<char> name_chr(std::optional<BoardCol> col) {
+	return col ? some(name_chr(*col)) : std::nullopt;
+}
+
 constexpr const char* name(BoardRow row) {
 	constexpr const char* names[] = {
 		"1",
@@ -241,6 +307,10 @@ constexpr const char* name(BoardRow row) {
 
 constexpr char name_chr(BoardRow row) {
 	return name(row)[0u];
+}
+
+constexpr std::optional<char> name_chr(std::optional<BoardRow> row) {
+	return row ? some(name_chr(*row)) : std::nullopt;
 }
 
 constexpr BoardRow operator ""_row(char c) {
@@ -267,6 +337,14 @@ constexpr BoardRow operator ""_row() {
 constexpr BoardCol operator ""_col(char c) {
 	switch(c) {
 	default: assert(!"Bad character in BoardCol literal.");
+	case 'a': return BoardCol::A;
+	case 'b': return BoardCol::B;
+	case 'c': return BoardCol::C;
+	case 'd': return BoardCol::D;
+	case 'e': return BoardCol::E;
+	case 'f': return BoardCol::F;
+	case 'g': return BoardCol::G;
+	case 'h': return BoardCol::H;
 	case 'A': return BoardCol::A;
 	case 'B': return BoardCol::B;
 	case 'C': return BoardCol::C;
@@ -551,6 +629,26 @@ constexpr std::optional<BoardPos> operator+(std::optional<BoardCol> c, std::opti
 	return std::nullopt;
 }
 
+constexpr BoardPos en_passant_target_to_capture(BoardPos pos) {
+	if(row(pos) == 3_row) {
+		return row_after(pos);
+	} else if(row(pos) == 6_row) {
+		return row_before(pos);
+	} else {
+		assert(!"Not an en passant target.");	
+	}
+}
+
+constexpr BoardPos en_passant_capture_to_target(BoardPos pos) {
+	if(row(pos) == 4_row) {
+		return row_before(pos);
+	} else if(row(pos) == 5_row) {
+		return row_after(pos);
+	} else {
+		assert(!"Not an en passant target.");	
+	}
+}
+
 inline constexpr std::array<BoardRow, 8u> each_row = {
 	1_row, 2_row, 3_row, 4_row,
 	5_row, 6_row, 7_row, 8_row,
@@ -559,6 +657,17 @@ inline constexpr std::array<BoardRow, 8u> each_row = {
 inline constexpr std::array<BoardCol, 8u> each_col = {
 	1_col, 2_col, 3_col, 4_col,
 	5_col, 6_col, 7_col, 8_col,
+};
+
+inline constexpr std::array<BoardPos, 64u> each_position = {
+	"a1"_pos, "a2"_pos, "a3"_pos, "a4"_pos, "a5"_pos, "a6"_pos, "a7"_pos, "a8"_pos,
+	"b1"_pos, "b2"_pos, "b3"_pos, "b4"_pos, "b5"_pos, "b6"_pos, "b7"_pos, "b8"_pos,
+	"c1"_pos, "c2"_pos, "c3"_pos, "c4"_pos, "c5"_pos, "c6"_pos, "c7"_pos, "c8"_pos,
+	"d1"_pos, "d2"_pos, "d3"_pos, "d4"_pos, "d5"_pos, "d6"_pos, "d7"_pos, "d8"_pos,
+	"e1"_pos, "e2"_pos, "e3"_pos, "e4"_pos, "e5"_pos, "e6"_pos, "e7"_pos, "e8"_pos,
+	"f1"_pos, "f2"_pos, "f3"_pos, "f4"_pos, "f5"_pos, "f6"_pos, "f7"_pos, "f8"_pos,
+	"g1"_pos, "g2"_pos, "g3"_pos, "g4"_pos, "g5"_pos, "g6"_pos, "g7"_pos, "g8"_pos,
+	"h1"_pos, "h2"_pos, "h3"_pos, "h4"_pos, "h5"_pos, "h6"_pos, "h7"_pos, "h8"_pos
 };
 
 } /* namespace ac */

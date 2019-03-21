@@ -13,11 +13,31 @@
 #include "UCI.h"
 #include "tsl/ordered_map.h"
 #include "GameSnapshot.h"
+#include <chrono>
 
 namespace ac {
 
 namespace bp = boost::process;
 namespace bfs = boost::filesystem;
+
+
+struct UCIGoArgs {
+	using msec_type = std::chrono::milliseconds;
+
+	std::vector<Move> searchmoves;
+	bool ponder                                   = false;
+	std::optional<msec_type> white_remaining_msec = std::nullopt;
+	std::optional<msec_type> black_remaining_msec = std::nullopt;
+	std::optional<msec_type> white_increment_msec = std::nullopt;
+	std::optional<msec_type> black_increment_msec = std::nullopt;
+	std::optional<std::size_t> moves_to_go        = std::nullopt;
+	std::optional<std::size_t> depth              = std::nullopt;
+	std::optional<std::size_t> nodes              = std::nullopt;
+	std::optional<std::size_t> mate               = std::nullopt;
+	std::optional<msec_type> move_time            = std::nullopt;
+	// only stop
+	bool infinite                                 = false;
+};
 
 struct ChessEngine {
 	struct KeyEqual: std::equal_to<std::string_view> {
@@ -53,7 +73,8 @@ struct ChessEngine {
 
 	void set_position(const GameSnapshot& board);
 
-	// void go();
+	void go(
+		
 private:
 
 	uci::Option& option_at(std::string_view name);

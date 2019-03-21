@@ -226,6 +226,14 @@ struct PositionSet {
 	
 	}
 	
+	constexpr std::size_t size() const {
+		return as_bitboard().count();
+	}
+
+	constexpr bool empty() const {
+		return size() == 0u;
+	}
+
 	constexpr BoardPosIterator begin() const {
 		return BoardPosIterator(board_);
 	}
@@ -281,6 +289,7 @@ struct PositionSet {
 	constexpr bool contains(std::pair<BoardRow, BoardCol> pos) const {
 		return board_[pos];
 	}
+
 private:
 	BitBoard board_;
 };
@@ -303,7 +312,6 @@ constexpr void try_add_position(PositionSet& pset, std::optional<BoardCol> c, st
 	try_add_position(pset, r, c);
 }
 
-
 constexpr PositionSet white_pawn_moveset(BoardPos pos) {
 	assert(row(pos) != 8_row);
 	PositionSet pset;
@@ -320,6 +328,34 @@ constexpr PositionSet black_pawn_moveset(BoardPos pos) {
 	pset.add(row_before(pos));
 	if(row(pos) == 7_row) {
 		pset.add({col(pos), 5_row});
+	}
+	return pset;
+}
+
+constexpr PositionSet white_pawn_attack_moveset(BoardPos pos) {
+	PositionSet pset;
+	auto [col, row] = pos;
+	if(row + 1) {
+		if(col + 1) {
+			pset.add(*(row + 1) + *(col + 1));
+		}
+		if(col - 1) {
+			pset.add(*(row + 1) + *(col - 1));
+		}
+	}
+	return pset;
+}
+
+constexpr PositionSet black_pawn_attack_moveset(BoardPos pos) {
+	PositionSet pset;
+	auto [col, row] = pos;
+	if(row - 1) {
+		if(col + 1) {
+			pset.add(*(row - 1) + *(col + 1));
+		}
+		if(col - 1) {
+			pset.add(*(row - 1) + *(col - 1));
+		}
 	}
 	return pset;
 }

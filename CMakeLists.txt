@@ -33,7 +33,7 @@ add_executable(
 	Stockfish/src/tt.cpp
 	Stockfish/src/uci.cpp
 	Stockfish/src/ucioption.cpp
-	Stockfish/src/syzygy/tbprobe.cpp	
+	Stockfish/src/syzygy/tbprobe.cpp
 )
 
 target_link_libraries(stockfish ${CMAKE_THREAD_LIBS_INIT})

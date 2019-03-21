@@ -3,6 +3,7 @@
 
 #include "BitBoard.h"
 #include "ChessPiece.h"
+#include "Move.h"
 #include <bitset>
 #include <optional>
 #include <utility>
@@ -242,6 +243,18 @@ struct Board {
 		return reference(*this, pos);
 	}
 
+	constexpr std::optional<ChessPiece> piece_at(BoardPos pos) const {
+		return (*this)[pos];
+	}
+
+	constexpr std::optional<ChessPiece> piece_at(std::pair<BoardRow, BoardCol> pos) const {
+		return (*this)[pos];
+	}
+
+	constexpr std::optional<ChessPiece> piece_at(std::pair<BoardCol, BoardRow> pos) const {
+		return (*this)[pos];
+	}
+
 	constexpr BitBoard positions(ChessPiece piece) const {
 		return bit_boards_[static_cast<std::size_t>(piece)];
 	}
@@ -249,7 +262,6 @@ struct Board {
 	constexpr BitBoard all_positions() const {
 		return white_positions() | black_positions();
 	}
-
 
 	constexpr BitBoard white_positions() const {
 		return white_king_positions()
@@ -268,7 +280,6 @@ struct Board {
 			| black_knight_positions()
 			| black_pawn_positions();
 	}
-
 
 	constexpr BitBoard white_pawn_positions() const {
 		return positions(ChessPiece::WhitePawn);
@@ -559,6 +570,101 @@ struct CompressedBoard {
 		return (*this)[make_board_pos(pos.first, pos.second)];
 	}
 
+	constexpr std::optional<ChessPiece> piece_at(BoardPos pos) const {
+		return (*this)[pos];
+	}
+
+	constexpr std::optional<ChessPiece> piece_at(std::pair<BoardRow, BoardCol> pos) const {
+		return (*this)[pos];
+	}
+
+	constexpr std::optional<ChessPiece> piece_at(std::pair<BoardCol, BoardRow> pos) const {
+		return (*this)[pos];
+	}
+
+	constexpr BitBoard positions(ChessPiece piece) const {
+		BitBoard brd;
+		for(auto pos: all_positions) {
+			if((*this)[pos] == piece) {
+				brd[pos] = true;
+			}
+		}
+		return brd;
+	}
+
+	constexpr BitBoard all_positions() const {
+		return white_positions() | black_positions();
+	}
+
+	constexpr BitBoard white_positions() const {
+		BitBoard brd;
+		for(auto pos: all_positions) {
+			if(color((*this)[pos]) == ChessPieceColor::White) {
+				brd[pos] = true;
+			}
+		}
+		return brd;
+	}
+
+	constexpr BitBoard black_positions() const {
+		BitBoard brd;
+		for(auto pos: all_positions) {
+			if(color((*this)[pos]) == ChessPieceColor::White) {
+				brd[pos] = true;
+			}
+		}
+		return brd;
+	}
+
+	constexpr BitBoard white_pawn_positions() const {
+		return positions(ChessPiece::WhitePawn);
+	}
+
+	constexpr BitBoard white_knight_positions() const {
+		return positions(ChessPiece::WhiteKnight);
+	}
+
+	constexpr BitBoard white_bishop_positions() const {
+		return positions(ChessPiece::WhiteBishop);
+	}
+
+	constexpr BitBoard white_rook_positions() const {
+		return positions(ChessPiece::WhiteRook);
+	}
+
+	constexpr BitBoard white_queen_positions() const {
+		return positions(ChessPiece::WhiteQueen);
+	}
+
+	constexpr BitBoard white_king_positions() const {
+		return positions(ChessPiece::WhiteKing);
+	}
+
+
+	constexpr BitBoard black_pawn_positions() const {
+		return positions(ChessPiece::BlackPawn);
+	}
+
+	constexpr BitBoard black_knight_positions() const {
+		return positions(ChessPiece::BlackKnight);
+	}
+
+	constexpr BitBoard black_bishop_positions() const {
+		return positions(ChessPiece::BlackBishop);
+	}
+
+	constexpr BitBoard black_rook_positions() const {
+		return positions(ChessPiece::BlackRook);
+	}
+
+	constexpr BitBoard black_queen_positions() const {
+		return positions(ChessPiece::BlackQueen);
+	}
+
+	constexpr BitBoard black_king_positions() const {
+		return positions(ChessPiece::BlackKing);
+	}
+
 	friend constexpr bool operator==(const CompressedBoard& l, const CompressedBoard& r) {
 		for(std::size_t i = 0u; i < l.board_.size(); ++i) {
 			const auto& lrow = l.board_[i];
@@ -590,9 +696,6 @@ struct CompressedBoard {
 
 	friend constexpr bool operator!=(const CompressedBoard& l, const Board& r) {
 		return not (l == r);
-	}
-
-	std::string fenstring() const {
 	}
 
 	constexpr Board decompressed() const {
@@ -661,6 +764,58 @@ constexpr CompressedBoard Board::compressed() const {
 		}
 	}
 	return result;
+}
+
+template <
+	class Brd,
+	std::enable_if_t<
+		std::is_same_v<Brd, Board> or std::is_same_v<Brd, CompressedBoard>,
+		bool
+	> = false
+>
+constexpr void apply_move(Brd& board, Move move) {
+	assert(move.start_position() != move.end_position());
+	assert(board.piece_at(move.start_position()) == move.moved_piece());
+	if(move.captured_position()) {
+		assert(move.captured_piece());
+		assert(board.piece_at(move.captured_position()) == move.captured_piece());
+		board[move.captured_position()] = std::nullopt;
+	}
+	board[move.start_position()] = std::nullopt;
+	board[move.end_position()] = move.moved_piece();
+	if(auto mv = move.secondary_move()) {
+		assert(not mv.captured_piece());
+		assert(not mv.captured_position());
+		board[mv.start_position()] = std::nullopt;
+		board[mv.end_position()] = mv.moved_piece();
+	}
+}
+
+template <
+	class Brd,
+	std::enable_if_t<
+		std::is_same_v<Brd, Board> or std::is_same_v<Brd, CompressedBoard>,
+		bool
+	> = false
+>
+constexpr void undo_move(Brd& board, Move move) {
+	assert(board.piece_at(move.end_position()) == move.moved_piece());
+	assert(not board.piece_at(move.start_position()));
+	board[move.end_position()] = std::nullopt;
+	if(move.captured_position()) {
+		assert(move.captured_piece());
+		if(move.is_en_passant_move()) {
+			assert(not board.piece_at(move.captured_position()));
+		} else {
+			assert(board.piece_at(move.captured_position()) == move.moved_piece());
+		}
+		board[move.captured_position()] = move.captured_piece();
+	}
+	board[move.start_position()] = move.moved_piece();
+	if(move.secondary_move()) {
+		assert(move.is_castle_move());
+		undo_move(brd, *move.secondary_move());
+	}
 }
 
 } /* namespace ac */
